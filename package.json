@@ -1,0 +1,19 @@
+{
+  "name": "coderbumble",
+  "version": "1.0.0",
+  "description": "bumble for coders",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js"
+  },
+  "keywords": [
+    "javascript",
+    "node.js"
+  ],
+  "author": "Harshit Mishra",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.21.1"
+  }
+}

@@ -5,9 +5,17 @@ app.listen(7777, () => {
     console.log('Server Chalu ho chuka hai');
 });
 
-app.get("/user", (req, res) => {
+let meraObject = {firstName: "Harsheit", lastName: "Mishra"};
+
+app.get("/user/:userId/:name/:password", (req, res) => {
+    console.log(req.params);
+    console.log(req.query);
     res.send("Hello Bhai, Kya chahiye?");
 })
+app.get("/user", (req, res) => {
+    console.log(req.query);
+    res.send(meraObject);
+});
 app.post("/user", (req, res) => {
     console.log('Post krne jaa rhe hain!');
     res.send("Kya bhejna hai?");

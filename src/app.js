@@ -3,8 +3,13 @@ const app = express();
 const connectDB = require("./config/database");
 const User = require("./models/user");
 const bcrypt = require('bcrypt');
+const {validateSignUp} = require('./utility/validation');
+const validator = require('validator');
+const cookieParser = require('cookie-parser');
+
 
 app.use(express.json());
+app.use(cookieParser());
 
 app.get("/user", async (req, res) => {
     const userEmail = req.body.emailId;
@@ -19,6 +24,12 @@ app.get("/user", async (req, res) => {
     } catch(err){
         res.status(404).send("Something went wrong");
     }
+});
+
+app.get("/profile", async (req, res) => {
+    const cookies = req.cookies;
+    console.log(cookies);
+    res.send("cookies mil gyin");
 });
 
 app.delete("/user", async (req, res) => {
@@ -70,6 +81,12 @@ app.get("/feed", async (req, res) => {
 app.post("/login", async (req, res) => {
     try {
         const {emailId, password} = req.body;
+
+        res.cookie("token", "Yeh hai Cookie");
+
+        if(!validator.isEmail(emailId)){
+            throw new Error('Please enter a valid email');
+        };
         const user = await User.findOne({ emailId: emailId});
         if(!user) {
             throw new Error("User not found");
@@ -87,6 +104,7 @@ app.post("/login", async (req, res) => {
 
 app.post("/signup", async (req, res) => {
     try{
+        validateSignUp(req);
         const {firstName, lastName, emailId, password, gender } = req.body;
 
         const passwordHash = await bcrypt.hash(password, 10);

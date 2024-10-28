@@ -3,9 +3,11 @@ const app = express();
 const connectDB = require("./config/database");
 const User = require("./models/user");
 const bcrypt = require('bcrypt');
-const {validateSignUp} = require('./utility/validation');
+const { validateSignUp } = require('./utility/validation');
 const validator = require('validator');
 const cookieParser = require('cookie-parser');
+const jwt = require('jsonwebtoken');
+const { userAuth } = require("./middlewares/auth");
 
 
 app.use(express.json());
@@ -14,22 +16,25 @@ app.use(cookieParser());
 app.get("/user", async (req, res) => {
     const userEmail = req.body.emailId;
 
-    try{
-        const users = await User.findOne({ emailId: userEmail});
-        if(!users){
+    try {
+        const users = await User.findOne({ emailId: userEmail });
+        if (!users) {
             res.send("User not found");
         } else {
             res.send(users);
         }
-    } catch(err){
+    } catch (err) {
         res.status(404).send("Something went wrong");
     }
 });
 
-app.get("/profile", async (req, res) => {
-    const cookies = req.cookies;
-    console.log(cookies);
-    res.send("cookies mil gyin");
+app.get("/profile", userAuth, async (req, res) => {
+    try {
+        const user = req.user;
+        res.send(user);
+    } catch (error) {
+        res.status(400).send(`Error: ${error.message}`);
+    }
 });
 
 app.delete("/user", async (req, res) => {
@@ -45,13 +50,13 @@ app.delete("/user", async (req, res) => {
 app.patch("/user/:userId", async (req, res) => {
     const userId = req.params?.userId;
     const data = req.body;
-    try{
+    try {
         const ALLOWED_UPDATES = ["photoUrl", "about", "gender", "age", "skills"];
         const isUpdateAllowed = Object.keys(data).every((k) => ALLOWED_UPDATES.includes(k));
-        if(!isUpdateAllowed){
+        if (!isUpdateAllowed) {
             throw new Error("Update not allowed");
         };
-        if(data?.skills.length > 5){
+        if (data?.skills.length > 5) {
             throw new Error("Bas Kar Bhai");
         }
         const user = await User.findByIdAndUpdate(userId, data, {
@@ -66,46 +71,48 @@ app.patch("/user/:userId", async (req, res) => {
 
 app.get("/feed", async (req, res) => {
 
-    try{
+    try {
         const users = await User.find({});
-        if(users.length===0){
+        if (users.length === 0) {
             res.send("No Users Yet");
         } else {
             res.send(users);
         }
-    } catch(err){
+    } catch (err) {
         res.status(404).send("Something went wrong");
     }
 });
 
 app.post("/login", async (req, res) => {
     try {
-        const {emailId, password} = req.body;
+        const { emailId, password } = req.body;
 
-        res.cookie("token", "Yeh hai Cookie");
-
-        if(!validator.isEmail(emailId)){
+        if (!validator.isEmail(emailId)) {
             throw new Error('Please enter a valid email');
         };
-        const user = await User.findOne({ emailId: emailId});
-        if(!user) {
+        const user = await User.findOne({ emailId: emailId });
+        if (!user) {
             throw new Error("User not found");
-        } 
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-        if(isPasswordValid) {
+        }
+        const isPasswordValid = await user.validatePassword(password);
+        if (isPasswordValid) {
+            const token = await user.getJWT();
+            res.cookie("token", token, {
+                expires: new Date(Date.now() + 8 * 3600000),
+            });
             res.send("Login Successful");
-        } else{
+        } else {
             throw new Error("Password Incorrect");
         }
-    } catch(error){
-        res.status(400).send("Error: "+ error.message);
+    } catch (error) {
+        res.status(400).send("Error: " + error.message);
     }
 })
 
 app.post("/signup", async (req, res) => {
-    try{
+    try {
         validateSignUp(req);
-        const {firstName, lastName, emailId, password, gender } = req.body;
+        const { firstName, lastName, emailId, password, gender } = req.body;
 
         const passwordHash = await bcrypt.hash(password, 10);
         console.log(passwordHash);
@@ -118,18 +125,27 @@ app.post("/signup", async (req, res) => {
         });
         await user.save();
         res.send("User Added Successfully");
-    } catch(err){
+    } catch (err) {
         res.status(400).send("Error Occurred:" + err.message);
     }
 });
 
+app.post("/sendConnectionRequest", userAuth, async (req, res) => {
+    try {
+        const user = req.user;
+        console.log("Sending connection request");
+        res.send(`${user.firstName} sent a connection request`);
+    } catch (err) {
+        res.status(400).send("Error Occurred:" + err.message);
+    }
+})
 
-connectDB().then(()=>{
+connectDB().then(() => {
     console.log("Balle Balle, Database chal chuka hai!");
     app.listen(7777, () => {
         console.log('Server bhi chalu ho chuka hai');
     });
-}) .catch(()=>{
+}).catch(() => {
     console.error("Error aagya re baba");
 });
 

@@ -3,15 +3,20 @@ const app = express();
 const connectDB = require("./config/database");
 const User = require("./models/user");
 const bcrypt = require('bcrypt');
-const { validateSignUp } = require('./utility/validation');
-const validator = require('validator');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
-const { userAuth } = require("./middlewares/auth");
 
 
 app.use(express.json());
 app.use(cookieParser());
+
+const authRouter = require("./routes/auth");
+const profileRouter = require("./routes/profile");
+const requestRouter = require("./routes/requests");
+
+app.use("/", authRouter);
+app.use("/", profileRouter);
+app.use("/", requestRouter);
 
 app.get("/user", async (req, res) => {
     const userEmail = req.body.emailId;
@@ -25,15 +30,6 @@ app.get("/user", async (req, res) => {
         }
     } catch (err) {
         res.status(404).send("Something went wrong");
-    }
-});
-
-app.get("/profile", userAuth, async (req, res) => {
-    try {
-        const user = req.user;
-        res.send(user);
-    } catch (error) {
-        res.status(400).send(`Error: ${error.message}`);
     }
 });
 
@@ -82,63 +78,6 @@ app.get("/feed", async (req, res) => {
         res.status(404).send("Something went wrong");
     }
 });
-
-app.post("/login", async (req, res) => {
-    try {
-        const { emailId, password } = req.body;
-
-        if (!validator.isEmail(emailId)) {
-            throw new Error('Please enter a valid email');
-        };
-        const user = await User.findOne({ emailId: emailId });
-        if (!user) {
-            throw new Error("User not found");
-        }
-        const isPasswordValid = await user.validatePassword(password);
-        if (isPasswordValid) {
-            const token = await user.getJWT();
-            res.cookie("token", token, {
-                expires: new Date(Date.now() + 8 * 3600000),
-            });
-            res.send("Login Successful");
-        } else {
-            throw new Error("Password Incorrect");
-        }
-    } catch (error) {
-        res.status(400).send("Error: " + error.message);
-    }
-})
-
-app.post("/signup", async (req, res) => {
-    try {
-        validateSignUp(req);
-        const { firstName, lastName, emailId, password, gender } = req.body;
-
-        const passwordHash = await bcrypt.hash(password, 10);
-        console.log(passwordHash);
-        const user = new User({
-            firstName,
-            lastName,
-            emailId,
-            gender,
-            password: passwordHash,
-        });
-        await user.save();
-        res.send("User Added Successfully");
-    } catch (err) {
-        res.status(400).send("Error Occurred:" + err.message);
-    }
-});
-
-app.post("/sendConnectionRequest", userAuth, async (req, res) => {
-    try {
-        const user = req.user;
-        console.log("Sending connection request");
-        res.send(`${user.firstName} sent a connection request`);
-    } catch (err) {
-        res.status(400).send("Error Occurred:" + err.message);
-    }
-})
 
 connectDB().then(() => {
     console.log("Balle Balle, Database chal chuka hai!");

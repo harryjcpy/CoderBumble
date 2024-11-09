@@ -13,10 +13,12 @@ app.use(cookieParser());
 const authRouter = require("./routes/auth");
 const profileRouter = require("./routes/profile");
 const requestRouter = require("./routes/requests");
+const userRouter = require("./routes/user");
 
 app.use("/", authRouter);
 app.use("/", profileRouter);
 app.use("/", requestRouter);
+app.use("/", userRouter);
 
 app.get("/user", async (req, res) => {
     const userEmail = req.body.emailId;
@@ -84,8 +86,8 @@ connectDB().then(() => {
     app.listen(7777, () => {
         console.log('Server bhi chalu ho chuka hai');
     });
-}).catch(() => {
-    console.error("Error aagya re baba");
+}).catch((err) => {
+    console.error(`DB me Error aagya re baba: ${err.message}`);
 });
 
 

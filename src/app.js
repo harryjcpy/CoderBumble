@@ -67,7 +67,7 @@ app.patch("/user/:userId", async (req, res) => {
     }
 });
 
-app.get("/feed", async (req, res) => {
+/*app.get("/feed", async (req, res) => {
 
     try {
         const users = await User.find({});
@@ -79,15 +79,15 @@ app.get("/feed", async (req, res) => {
     } catch (err) {
         res.status(404).send("Something went wrong");
     }
-});
+});*/
 
 connectDB().then(() => {
-    console.log("Balle Balle, Database chal chuka hai!");
+    console.log("database connection established");
     app.listen(7777, () => {
-        console.log('Server bhi chalu ho chuka hai');
+        console.log('connected to server');
     });
 }).catch((err) => {
-    console.error(`DB me Error aagya re baba: ${err.message}`);
+    console.error(`Error in DB: ${err.message}`);
 });
 
 

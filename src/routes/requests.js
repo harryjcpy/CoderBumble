@@ -44,13 +44,19 @@ requestRouter.post("/request/send/:status/:toUserId", userAuth, async (req, res)
 
         const data = await connectionRequest.save();
 
+        let message;
+        if (status === "ignored") {
+            message = `${fromUser.firstName} ignored ${toUser.firstName}`;
+        } else if (status === "interested") {
+            message = `${fromUser.firstName} is interested in ${toUser.firstName}`;
+        }
         res.json({
-            message: `Connection request sent successfully From ${fromUser.firstName} to ${toUser.firstName}`,
+            message,
             data,
         })
 
     } catch (err) {
-        res.status(400).send("Error Occurred:" + err.message);
+        res.status(400).send("Error Occurred Here:" + err.message);
     }
 })
 
